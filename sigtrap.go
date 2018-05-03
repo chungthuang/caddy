@@ -16,8 +16,6 @@ package caddy
 
 import (
 	"log"
-	"os"
-	"os/signal"
 	"sync"
 )
 
@@ -27,42 +25,9 @@ import (
 // required for the caddy package to function properly, but this is a
 // convenient way to allow the user to control this part of your program.
 func TrapSignals() {
-	trapSignalsCrossPlatform()
 	trapSignalsPosix()
 }
 
-// trapSignalsCrossPlatform captures SIGINT, which triggers forceful
-// shutdown that executes shutdown callbacks first. A second interrupt
-// signal will exit the process immediately.
-func trapSignalsCrossPlatform() {
-	go func() {
-		shutdown := make(chan os.Signal, 1)
-		signal.Notify(shutdown, os.Interrupt)
-
-		for i := 0; true; i++ {
-			<-shutdown
-
-			if i > 0 {
-				log.Println("[INFO] SIGINT: Force quit")
-				for _, f := range OnProcessExit {
-					f() // important cleanup actions only
-				}
-				os.Exit(2)
-			}
-
-			log.Println("[INFO] SIGINT: Shutting down")
-
-			// important cleanup actions before shutdown callbacks
-			for _, f := range OnProcessExit {
-				f()
-			}
-
-			go func() {
-				os.Exit(executeShutdownCallbacks("SIGINT"))
-			}()
-		}
-	}()
-}
 
 // executeShutdownCallbacks executes the shutdown callbacks as initiated
 // by signame. It logs any errors and returns the recommended exit status.

@@ -27,7 +27,7 @@ import (
 func trapSignalsPosix() {
 	go func() {
 		sigchan := make(chan os.Signal, 1)
-		signal.Notify(sigchan, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGUSR1, syscall.SIGUSR2)
+		signal.Notify(sigchan, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGUSR1, syscall.SIGUSR2)
 
 		for sig := range sigchan {
 			switch sig {
@@ -38,19 +38,7 @@ func trapSignalsPosix() {
 				}
 				os.Exit(0)
 
-			case syscall.SIGTERM:
-				log.Println("[INFO] SIGTERM: Shutting down servers then terminating")
-				exitCode := executeShutdownCallbacks("SIGTERM")
-				for _, f := range OnProcessExit {
-					f() // only perform important cleanup actions
-				}
-				err := Stop()
-				if err != nil {
-					log.Printf("[ERROR] SIGTERM stop: %v", err)
-					exitCode = 3
-				}
-				os.Exit(exitCode)
-
+		
 			case syscall.SIGUSR1:
 				log.Println("[INFO] SIGUSR1: Reloading")
 
